@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>United Shekatkars - Secret Squad</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 400px; margin: 30px auto; }
+    h1 { text-align: center; }
+    .member {
+      border: 1px solid #444;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 6px;
+      background: #f0f0f0;
+    }
+    label, select, input {
+      display: block;
+      margin: 6px 0;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+
+  <h1>United Shekatkars - Login</h1>
+
+  <div id="loginDiv">
+    <label>Username:</label>
+    <input type="text" id="usernameInput" />
+    <label>Password:</label>
+    <input type="password" id="passwordInput" />
+    <button onclick="login()">Login</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
+
+  <div id="mainDiv" style="display:none;">
+    <h2>Welcome, <span id="userSpan"></span>!</h2>
+
+    <h3>Members Points:</h3>
+    <div id="pointsList"></div>
+
+    <h3>Transfer Points</h3>
+    <form id="transferForm" onsubmit="return transferPoints(event)">
+      <label>From:</label>
+      <select id="fromUser" required></select>
+
+      <label>To:</label>
+      <select id="toUser" required></select>
+
+      <label>Point Type:</label>
+      <select id="pointType" required>
+        <option value="saras">Saras Points</option>
+        <option value="love">Love Points (LP)</option>
+      </select>
+
+      <label>Amount:</label>
+      <input type="number" id="amount" min="1" required />
+
+      <button type="submit">Send Points</button>
+      <p id="transferMsg" style="color:green;"></p>
+    </form>
+  </div>
+
+  <script>
+    // User data: username: password
+    const users = {
+      'Shreeram': 'pass123',
+      'Sanat': 'sanat456',
+      'Sankashti': 'sanka789',
+      'Samruddhi': 'samr321',
+      'Aarti': 'aart999'
+    };
+
+    // Points data for 5 members (starting points)
+    const pointsData = {
+      'Shreeram': { saras: 100, love: 100 },
+      'Sanat': { saras: 100, love: 100 },
+      'Sankashti': { saras: 100, love: 100 },
+      'Samruddhi': { saras: 100, love: 100 },
+      'Aarti': { saras: 100, love: 100 }
+    };
+
+    let loggedInUser = null;
+
+    // Login function
+    function login() {
+      const username = document.getElementById('usernameInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
+
+      if (users[username] && users[username] === password) {
+        loggedInUser = username;
+        document.getElementById('loginDiv').style.display = 'none';
+        document.getElementById('mainDiv').style.display = 'block';
+        document.getElementById('userSpan').textContent = username;
+        setupPage();
+      } else {
+        document.getElementById('loginError').textContent = 'Wrong username or password!';
+      }
+    }
+
+    // Setup main page after login
+    function setupPage() {
+      updatePointsDisplay();
+
+      // Fill dropdowns for transfer form
+      const fromSelect = document.getElementById('fromUser');
+      const toSelect = document.getElementById('toUser');
+
+      fromSelect.innerHTML = '';
+      toSelect.innerHTML = '';
+
+      for (const user in users) {
+        const optionFrom = document.createElement('option');
+        optionFrom.value = user;
+        optionFrom.textContent = user;
+        fromSelect.appendChild(optionFrom);
+
+        const optionTo = document.createElement('option');
+        optionTo.value = user;
+        optionTo.textContent = user;
+        toSelect.appendChild(optionTo);
+      }
+      // Set default "From" as logged in user
+      fromSelect.value = loggedInUser;
+    }
+
+    // Update points display on the page
+    function updatePointsDisplay() {
+      const container = document.getElementById('pointsList');
+      container.innerHTML = '';
+      for (const user in pointsData) {
+        const memberDiv = document.createElement('div');
+        memberDiv.className = 'member';
+        memberDiv.innerHTML = `<strong>${user}</strong><br/>
+          Saras Points: ${pointsData[user].saras} <br/>
+          Love Points (LP): ${pointsData[user].love}`;
+        container.appendChild(memberDiv);
+      }
+    }
+
+    // Handle point transfer
+    function transferPoints(event) {
+      event.preventDefault();
+      const fromUser = document.getElementById('fromUser').value;
+      const toUser = document.getElementById('toUser').value;
+      const pointType = document.getElementById('pointType').value;
+      const amount = parseInt(document.getElementById('amount').value);
+
+      const transferMsg = document.getElementById('transferMsg');
+      transferMsg.style.color = 'red';
+
+      if (fromUser === toUser) {
+        transferMsg.textContent = "You can't send points to yourself!";
+        return false;
+      }
+      if (amount <= 0 || isNaN(amount)) {
+        transferMsg.textContent = "Enter a valid amount!";
+        return false;
+      }
+      if (pointsData[fromUser][pointType] < amount) {
+        transferMsg.textContent = `${fromUser} doesn't have enough points!`;
+        return false;
+      }
+      if (pointType === 'love' && (pointsData[toUser][pointType] + amount) > 500) {
+        transferMsg.textContent = `${toUser}'s Love Points cannot exceed 500!`;
+        return false;
+      }
+
+      // Transfer points
+      pointsData[fromUser][pointType] -= amount;
+      pointsData[toUser][pointType] += amount;
+
+      updatePointsDisplay();
+
+      transferMsg.style.color = 'green';
+      transferMsg.textContent = `Successfully sent ${amount} ${pointType === 'saras' ? 'Saras Points' : 'Love Points'} from ${fromUser} to ${toUser}!`;
+
+      // Reset form
+      document.getElementById('transferForm').reset();
+      // Keep 'From' as logged-in user
+      document.getElementById('fromUser').value = loggedInUser;
+
+      return false;
+    }
+  </script>
+
+</body>
+</html>
